@@ -1,0 +1,19 @@
+{
+  "name": "The Captain's Chronometer",
+  "short_name": "Chronometer",
+  "description": "An offline, vintage pirate-themed multi-clock: stopwatch, tally meter, microsecond counter, hourglass countdown and ship's bell.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#2a180c",
+  "theme_color": "#2b1a0e",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e7d09a'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%235a3418' stroke-width='6'/%3E%3Cg stroke='%235a3418' stroke-width='4.5' stroke-linecap='round'%3E%3Cpath d='M32 5v54M5 32h54M13 13l38 38M51 13L13 51'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='8' fill='%23d4a443' stroke='%233a2306' stroke-width='2'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

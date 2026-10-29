@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Captain's Chronometer</title>
+  <meta name="description" content="An offline, vintage pirate-themed multi-clock: stopwatch, tally meter, microsecond counter, hourglass countdown and ship's bell.">
+  <meta name="theme-color" content="#2b1a0e">
+  <link rel="manifest" href="manifest.json">
+  <!-- Favicon drawn inline as SVG (no image files) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%235a3418' stroke-width='7'/%3E%3Cg stroke='%235a3418' stroke-width='5' stroke-linecap='round'%3E%3Cpath d='M32 2v60M2 32h60M10 10l44 44M54 10L10 54'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='9' fill='%23d4a443' stroke='%233a2306' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="preload" href="fonts/cinzel-decorative-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/pirata-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Shared SVG definitions: gradients and the weathered-wood filter used by every instrument -->
+  <svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="brassRadial" cx="35%" cy="30%" r="75%">
+        <stop offset="0" stop-color="#fff0b8"/>
+        <stop offset=".25" stop-color="#e0b55a"/>
+        <stop offset=".6" stop-color="#a8772a"/>
+        <stop offset="1" stop-color="#4f3109"/>
+      </radialGradient>
+      <linearGradient id="brassLinear" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f6df98"/>
+        <stop offset=".45" stop-color="#c99a40"/>
+        <stop offset=".55" stop-color="#9c6f24"/>
+        <stop offset="1" stop-color="#e0bb63"/>
+      </linearGradient>
+      <radialGradient id="rivetGrad" cx="35%" cy="35%" r="65%">
+        <stop offset="0" stop-color="#fff6cf"/>
+        <stop offset=".45" stop-color="#c89b45"/>
+        <stop offset="1" stop-color="#4a3008"/>
+      </radialGradient>
+      <linearGradient id="woodRim" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#7a4b27"/>
+        <stop offset=".35" stop-color="#4a2a14"/>
+        <stop offset=".6" stop-color="#6a3f20"/>
+        <stop offset="1" stop-color="#2e190b"/>
+      </linearGradient>
+      <linearGradient id="woodSpoke" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#2c180a"/>
+        <stop offset=".35" stop-color="#6e4424"/>
+        <stop offset=".55" stop-color="#8a5a32"/>
+        <stop offset="1" stop-color="#2a1609"/>
+      </linearGradient>
+      <radialGradient id="ivoryFace" cx="45%" cy="40%" r="70%">
+        <stop offset="0" stop-color="#f8eccb"/>
+        <stop offset=".7" stop-color="#e8d4a2"/>
+        <stop offset="1" stop-color="#b8955a"/>
+      </radialGradient>
+      <linearGradient id="sandGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#efcb82"/>
+        <stop offset="1" stop-color="#b8893c"/>
+      </linearGradient>
+      <!-- Weathered wood: fractal noise streaks composited onto the wood shapes -->
+      <filter id="weathered" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.015 0.22" numOctaves="3" seed="4" result="noise"/>
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.04  0 0 0 0 0.01  1.4 0 0 0 -0.55" result="grain"/>
+        <feComposite in="grain" in2="SourceAlpha" operator="in" result="grainIn"/>
+        <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="grainIn"/></feMerge>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Candle-light flicker vignette (decorative) -->
+  <div class="candle-vignette" aria-hidden="true"></div>
+
+  <div class="rope-frame">
+    <span class="rivet rivet-tl" aria-hidden="true"></span>
+    <span class="rivet rivet-tr" aria-hidden="true"></span>
+    <span class="rivet rivet-bl" aria-hidden="true"></span>
+    <span class="rivet rivet-br" aria-hidden="true"></span>
+
+    <main class="chart" id="main">
+      <header class="masthead">
+        <p class="kicker">Ye Olde Instrument Makers &middot; Port Royal &middot; Anno 1717</p>
+        <h1>The Captain's Chronometer</h1>
+        <p class="motto">Every second logged, every bell struck true.</p>
+      </header>
+
+      <div class="rope" aria-hidden="true"></div>
+
+      <!-- ===== Master controls ===== -->
+      <section class="controls" id="controls" aria-label="Master controls">
+        <div class="button-row">
+          <button id="btn-start" class="brass-btn" type="button" aria-label="Start the chronometer" aria-keyshortcuts="Space">
+            <span class="plate-title">Start</span><span class="plate-sub">Weigh anchor</span>
+          </button>
+          <button id="btn-pause" class="brass-btn" type="button" aria-label="Pause the chronometer" aria-keyshortcuts="Space" disabled>
+            <span class="plate-title">Pause</span><span class="plate-sub">Drop anchor</span>
+          </button>
+          <button id="btn-reset" class="brass-btn" type="button" aria-label="Reset the chronometer to zero" aria-keyshortcuts="R" disabled>
+            <span class="plate-title">Reset</span><span class="plate-sub">Return to port</span>
+          </button>
+        </div>
+        <p id="voyage-status" class="status" role="status" aria-live="polite">At anchor. Press Start to set sail.</p>
+      </section>
+
+      <!-- ===== Dashboard: helm centerpiece with the three main instruments ===== -->
+      <section class="dashboard" aria-label="Instruments">
+
+        <!-- Seconds clock -->
+        <figure class="instrument area-secs">
+          <div class="porthole" data-seed="1717">
+            <div class="face face-ivory">
+              <svg id="secs-dial" class="dial" viewBox="-100 -100 200 200" role="img" aria-label="Analog seconds dial"></svg>
+            </div>
+          </div>
+          <figcaption>
+            <span class="label">Seconds Clock</span>
+            <span class="plaque"><span id="secs-digital" class="digits" role="timer" aria-live="off" aria-label="Elapsed time 00:00:00"></span></span>
+          </figcaption>
+        </figure>
+
+        <!-- Ship's wheel (helm) -->
+        <div class="helm-wrap area-helm">
+          <div class="helm-shadow" aria-hidden="true"></div>
+          <div id="helm" class="helm">
+            <svg id="helm-svg" viewBox="-200 -200 400 400" role="img" aria-label="Ship's wheel, turns while the chronometer runs"></svg>
+          </div>
+          <p class="nameplate" aria-hidden="true">H.M.S. Chronos</p>
+        </div>
+
+        <!-- Tally meter -->
+        <figure class="instrument area-tally">
+          <div class="porthole" data-seed="1805">
+            <div class="face face-dark">
+              <div class="tally-inner">
+                <span class="tally-title">Tally</span>
+                <div id="tally" class="odometer" role="status" aria-live="off" aria-label="Tally meter: 0 seconds" data-value="0"></div>
+                <span class="tally-sub">one notch per second</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><span class="label">Tally Meter</span></figcaption>
+        </figure>
+
+        <!-- Microsecond counter -->
+        <figure class="instrument area-micro">
+          <div class="gauge capsule" data-seed="1588">
+            <span class="cap-rivet cr-1" aria-hidden="true"></span>
+            <span class="cap-rivet cr-2" aria-hidden="true"></span>
+            <span class="cap-rivet cr-3" aria-hidden="true"></span>
+            <span class="cap-rivet cr-4" aria-hidden="true"></span>
+            <div class="gauge-face">
+              <svg id="ms-dial" class="ms-dial" viewBox="-50 -50 100 100" aria-hidden="true" focusable="false"></svg>
+              <div class="micro-readout">
+                <span id="micro-digits" class="digits glow" role="timer" aria-live="off" aria-label="Elapsed microseconds: 0" aria-describedby="micro-note"></span>
+                <span class="unit">&micro;s<a href="#micro-note" class="note-ref" aria-label="About microsecond precision">*</a></span>
+              </div>
+            </div>
+          </div>
+          <figcaption><span class="label">Microsecond Counter</span></figcaption>
+        </figure>
+      </section>
+
+      <div class="rope" aria-hidden="true"></div>
+
+      <!-- ===== Offline extras ===== -->
+      <section class="extras" aria-label="Offline extras">
+
+        <!-- Hourglass countdown -->
+        <article id="hourglass-card" class="instrument extra-card" data-alarm-count="0">
+          <h2>The Hourglass</h2>
+          <div class="porthole" data-seed="1666">
+            <div class="face face-sea">
+              <svg id="hourglass-svg" class="hourglass" viewBox="0 0 120 200" role="img" aria-label="Hourglass with falling sand">
+                <defs>
+                  <clipPath id="clipTopBulb"><path d="M31,20 C31,70 56,88 56,100 L64,100 C64,88 89,70 89,20 Z"/></clipPath>
+                  <clipPath id="clipBotBulb"><path d="M56,100 C56,112 31,130 31,180 L89,180 C89,130 64,112 64,100 Z"/></clipPath>
+                </defs>
+                <!-- posts -->
+                <rect x="15" y="16" width="8" height="168" rx="3" fill="url(#woodSpoke)" stroke="#170b03" stroke-width="1"/>
+                <rect x="97" y="16" width="8" height="168" rx="3" fill="url(#woodSpoke)" stroke="#170b03" stroke-width="1"/>
+                <ellipse cx="19" cy="100" rx="6" ry="10" fill="url(#woodSpoke)" stroke="#170b03" stroke-width="1"/>
+                <ellipse cx="101" cy="100" rx="6" ry="10" fill="url(#woodSpoke)" stroke="#170b03" stroke-width="1"/>
+                <!-- sand -->
+                <g clip-path="url(#clipTopBulb)">
+                  <rect id="sand-top" x="28" y="38" width="64" height="62" fill="url(#sandGrad)"/>
+                </g>
+                <g clip-path="url(#clipBotBulb)">
+                  <path id="sand-bottom" d="M28,180 L92,180 Z" fill="url(#sandGrad)"/>
+                </g>
+                <line id="sand-stream" class="stream" x1="60" y1="98" x2="60" y2="180" stroke="#e0b867" stroke-width="1.6" stroke-dasharray="3 2.5" opacity="0"/>
+                <!-- glass -->
+                <path d="M31,20 C31,70 56,88 56,100 C56,112 31,130 31,180 L89,180 C89,130 64,112 64,100 C64,88 89,70 89,20 Z" fill="rgba(200,235,215,.10)" stroke="rgba(240,255,240,.55)" stroke-width="1.4"/>
+                <path d="M37,26 C37,62 52,80 55,92" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M37,174 C37,140 50,120 54,110" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.4" stroke-linecap="round"/>
+                <!-- plates -->
+                <rect x="8" y="6" width="104" height="13" rx="3" fill="url(#woodRim)" stroke="#170b03" stroke-width="1.2"/>
+                <rect x="8" y="181" width="104" height="13" rx="3" fill="url(#woodRim)" stroke="#170b03" stroke-width="1.2"/>
+                <rect x="10" y="10" width="100" height="2" fill="url(#brassLinear)"/>
+                <rect x="10" y="188" width="100" height="2" fill="url(#brassLinear)"/>
+              </svg>
+            </div>
+          </div>
+          <span class="plaque"><span id="hg-display" class="digits" role="timer" aria-live="off" aria-label="Hourglass remaining 03:00"></span></span>
+
+          <form id="hg-form" class="hg-form" onsubmit="return false;">
+            <div class="field">
+              <label for="hg-min">Minutes</label>
+              <input id="hg-min" type="number" inputmode="numeric" min="0" max="99" step="1" value="3">
+            </div>
+            <span class="field-sep" aria-hidden="true">:</span>
+            <div class="field">
+              <label for="hg-sec">Seconds</label>
+              <input id="hg-sec" type="number" inputmode="numeric" min="0" max="59" step="1" value="0">
+            </div>
+          </form>
+          <div class="button-row small">
+            <button id="hg-start" class="brass-btn small" type="button" aria-label="Turn the hourglass and start the countdown"><span class="plate-title">Turn</span></button>
+            <button id="hg-pause" class="brass-btn small" type="button" aria-label="Pause the hourglass" disabled><span class="plate-title">Hold</span></button>
+            <button id="hg-reset" class="brass-btn small" type="button" aria-label="Reset the hourglass"><span class="plate-title">Reset</span></button>
+          </div>
+          <p id="hg-status" class="status small" role="status" aria-live="assertive">Set the sand and turn the glass.</p>
+        </article>
+
+        <!-- Ship's bell -->
+        <article id="bell-card" class="instrument extra-card" data-bell-count="0">
+          <h2>The Ship's Bell</h2>
+          <div class="porthole" data-seed="1492">
+            <div class="face face-sea">
+              <svg class="bell-svg" viewBox="0 0 120 120" role="img" aria-label="Ship's bell">
+                <rect x="20" y="10" width="80" height="9" rx="3" fill="url(#woodRim)" stroke="#170b03" stroke-width="1"/>
+                <rect x="55" y="17" width="10" height="9" fill="url(#brassLinear)" stroke="#3d2606" stroke-width=".8"/>
+                <g id="bell-body" class="bell">
+                  <path d="M60,24 C45,24 41,37 41,52 C41,70 35,78 27,85 L93,85 C85,78 79,70 79,52 C79,37 75,24 60,24 Z" fill="url(#brassRadial)" stroke="#3d2606" stroke-width="1.2"/>
+                  <rect x="24" y="84" width="72" height="7" rx="3.5" fill="url(#brassLinear)" stroke="#3d2606" stroke-width="1"/>
+                  <path d="M48,44 C48,36 52,31 57,30" fill="none" stroke="rgba(255,248,210,.7)" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M37,66 L83,66" stroke="rgba(60,35,5,.45)" stroke-width="1"/>
+                  <line x1="60" y1="86" x2="60" y2="97" stroke="#3d2606" stroke-width="1.6"/>
+                  <circle cx="60" cy="99" r="4.5" fill="url(#brassRadial)" stroke="#3d2606" stroke-width=".8"/>
+                  <path d="M60,103 C58,108 62,111 60,116" fill="none" stroke="#caa86a" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 1.2"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <span class="plaque"><span id="bell-next" class="digits" aria-live="off">30:00</span></span>
+          <p class="bell-caption">until the next bell (sailing time)</p>
+          <div class="button-row small">
+            <button id="bell-toggle" class="brass-btn small" type="button" aria-pressed="true" aria-label="Half-hour chimes"><span class="plate-title">Chimes: On</span></button>
+            <button id="bell-mute" class="brass-btn small" type="button" aria-pressed="false" aria-label="Mute all sounds"><span class="plate-title">Mute: Off</span></button>
+            <button id="bell-test" class="brass-btn small" type="button" aria-label="Strike the bell once"><span class="plate-title">Strike</span></button>
+          </div>
+          <p id="bell-status" class="status small" role="status" aria-live="polite">Rings every 30 minutes of sailing time, in the old ship's-bell count of one to eight.</p>
+        </article>
+      </section>
+
+      <footer class="footnotes">
+        <p id="micro-note"><span aria-hidden="true">* </span><strong>On microseconds:</strong> browsers deliberately round <code>performance.now()</code> for security, so true microsecond readings are not available. <span id="micro-precision">The digits finer than this browser's timer step are</span> interpolated each frame so the counter looks continuously alive. Every digit above them is measured.</p>
+        <p>All instruments keep time from timestamps, not ticks, so they stay true in a background tab. Works fully offline once loaded. Keys: <kbd>Space</kbd> start or pause, <kbd>R</kbd> reset.</p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="js/app.js" defer></script>
+</body>
+</html>
